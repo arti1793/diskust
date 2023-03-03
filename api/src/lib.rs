@@ -7,7 +7,7 @@ use std::{
 
 pub struct Node {}
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Diskust {
     is_file: bool,
     is_dir: bool,
@@ -23,7 +23,6 @@ impl Diskust {
                 return Result::Err(io::Error::new(io::ErrorKind::NotFound, "skip symlink"));
             }
             if meta.is_file() {
-                // println!("file {:?}", path);
                 println!("file {} {}", path.to_str().unwrap(), fit_4(meta.len()));
                 return Ok(Diskust {
                     is_dir: meta.is_dir(),
@@ -33,7 +32,6 @@ impl Diskust {
                 });
             }
             if meta.is_dir() {
-                // println!("dir {:?}", path.to_str().unwrap());
                 let mut nodes: Vec<Diskust> = vec![];
                 for entry in read_dir(path)? {
                     if let Result::Ok(entry) = entry {
@@ -41,11 +39,7 @@ impl Diskust {
                         if let Result::Ok(node) = node {
                             nodes.push(node);
                         } else {
-
-                            // println!("skip dir {:?}", &entry.path().to_str().unwrap());
                         }
-                    } else {
-                        // println!("skip dir {:?}", &entry?.path().to_str().unwrap());
                     }
                 }
                 let size = nodes.iter().map(|Diskust { size, .. }| size).sum();
@@ -82,5 +76,24 @@ mod tests {
                 .kind(),
             ErrorKind::NotFound
         );
+    }
+    #[test]
+    fn file() {
+        let mut file = Diskust::new(Path::new(&"./../Cargo.toml".to_string())).unwrap();
+        file.size = 0; // for test
+        assert_eq!(
+            file,
+            Diskust {
+                is_dir: false,
+                is_file: true,
+                nodes: Box::new(None),
+                size: 0
+            }
+        );
+    }
+    #[test]
+    fn test() {
+        let d = Diskust::new(Path::new(&"/home/arti1793".to_string()));
+        println!("{:?}", d.unwrap().size);
     }
 }
