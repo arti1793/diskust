@@ -1,4 +1,4 @@
-use file_size::fit_4;
+use rayon::prelude::*;
 use std::{
     fs::read_dir,
     io::{self, Result},
@@ -19,37 +19,42 @@ impl Diskust {
     fn new(path: &Path) -> Result<Diskust> {
         let meta = path.metadata();
         if let Result::Ok(meta) = meta {
-            if meta.is_symlink() {
+            if path.is_symlink() {
                 return Result::Err(io::Error::new(io::ErrorKind::NotFound, "skip symlink"));
             }
-            if meta.is_file() {
-                println!("file {} {}", path.to_str().unwrap(), fit_4(meta.len()));
+            if path.is_file() {
                 return Ok(Diskust {
-                    is_dir: meta.is_dir(),
-                    is_file: meta.is_file(),
+                    is_dir: path.is_dir(),
+                    is_file: path.is_file(),
                     nodes: Box::new(None),
                     size: meta.len(),
                 });
             }
-            if meta.is_dir() {
-                let mut nodes: Vec<Diskust> = vec![];
-                for entry in read_dir(path)? {
-                    if let Result::Ok(entry) = entry {
-                        let node = Self::new(&entry.path());
-                        if let Result::Ok(node) = node {
-                            nodes.push(node);
+            if path.is_dir() {
+                let nodes: Vec<Diskust> = read_dir(path)?
+                    .par_bridge()
+                    .into_par_iter()
+                    .flat_map(|entry| {
+                        if let Result::Ok(entry) = entry {
+                            let node = Self::new(&entry.path());
+                            if let Result::Ok(node) = node {
+                                Some(node)
+                            } else {
+                                None
+                            }
                         } else {
+                            None
                         }
-                    }
-                }
+                    })
+                    .collect();
+
                 let size = nodes.iter().map(|Diskust { size, .. }| size).sum();
                 let dir_node = Ok(Diskust {
-                    is_dir: meta.is_dir(),
-                    is_file: meta.is_file(),
+                    is_dir: path.is_dir(),
+                    is_file: path.is_file(),
                     nodes: Box::new(Some(nodes)),
                     size,
                 });
-                println!("dir {} {} MB", path.to_str().unwrap(), fit_4(size));
 
                 return dir_node;
             }
@@ -90,10 +95,5 @@ mod tests {
                 size: 0
             }
         );
-    }
-    #[test]
-    fn test() {
-        let d = Diskust::new(Path::new(&"/home/arti1793".to_string()));
-        println!("{:?}", d.unwrap().size);
     }
 }
