@@ -1,7 +1,7 @@
 .tree {
   padding: 6px;
   flex-basis: 60%;
-  border-right: 2px solid #0f0f0f;
+  /* border-right: 2px solid #0f0f0f; */
   overflow-y: scroll;
 }
 .graph {
@@ -9,10 +9,25 @@
 
   flex-basis: 40%;
 }
+.header {
+  padding: 6px;
+  padding-left: 8px;
+
+  /* position: fixed; */
+  /* border-bottom: 2px solid #0f0f0f; */
+}
 .container {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
+  flex-grow: 1;
   height: 100vh;
+}
+.content {
+  overflow-y: hidden;
+  /* margin-top: 40px; */
+  display: flex;
+  flex-direction: row;
+  flex-grow: 1;
 }
 .spinner {
   position: absolute;

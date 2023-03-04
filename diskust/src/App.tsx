@@ -1,14 +1,8 @@
-import {
-  Reducer,
-  ReducerAction,
-  useContext,
-  useEffect,
-  useReducer,
-  useState,
-} from "react";
+import { useEffect, useState } from "react";
 import { Intent, ProgressBar, Spinner } from "@blueprintjs/core";
 
 import { FolderTree } from "./folder_tree";
+import { Breadcrumbs } from "./breadcrumbs";
 import { Action, State, useStore } from "./state/index";
 
 import "./../node_modules/normalize.css";
@@ -34,10 +28,15 @@ function App() {
   return (
     <div className="container bp4-dark">
       {!loaded && <Spinner className="spinner" intent={Intent.PRIMARY} />}
-      <aside className="tree">
-        <FolderTree />
-      </aside>
-      <aside className="graph">graph</aside>
+      <header className="header">
+        <Breadcrumbs />
+      </header>
+      <div className="content">
+        <aside className="tree">
+          <FolderTree />
+        </aside>
+        <aside className="graph">graph</aside>
+      </div>
     </div>
   );
 }

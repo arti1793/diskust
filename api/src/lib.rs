@@ -13,7 +13,9 @@ pub struct Diskust {
     is_file: bool,
     is_dir: bool,
     size: u64,
-    path_str: String,
+    files_count: u64,
+    whole_path_str: String,
+    name: String,
     nodes: Box<Option<Vec<Diskust>>>,
 }
 
@@ -30,11 +32,13 @@ impl Diskust {
                     is_file: path.is_file(),
                     nodes: Box::new(None),
                     size: meta.len(),
-                    path_str: path.display().to_string(),
+                    files_count: 1,
+                    whole_path_str: path.display().to_string(),
+                    name: path.file_name().unwrap().to_owned().into_string().unwrap(),
                 });
             }
             if path.is_dir() {
-                let nodes: Vec<Diskust> = read_dir(path)?
+                let mut nodes: Vec<Diskust> = read_dir(path)?
                     .par_bridge()
                     .into_par_iter()
                     .flat_map(|entry| {
@@ -50,14 +54,20 @@ impl Diskust {
                         }
                     })
                     .collect();
-
+                nodes.par_sort_by(|one, two| two.size.cmp(&one.size));
                 let size = nodes.iter().map(|Diskust { size, .. }| size).sum();
+                let files_count = nodes
+                    .iter()
+                    .map(|Diskust { files_count, .. }| files_count)
+                    .sum();
                 let dir_node = Ok(Diskust {
                     is_dir: path.is_dir(),
                     is_file: path.is_file(),
                     nodes: Box::new(Some(nodes)),
                     size,
-                    path_str: path.display().to_string(),
+                    name: path.file_name().unwrap().to_owned().into_string().unwrap(),
+                    files_count,
+                    whole_path_str: path.display().to_string(),
                 });
 
                 return dir_node;
@@ -90,6 +100,7 @@ mod tests {
     fn file() {
         let mut file = Diskust::new(Path::new(&"./../Cargo.toml".to_string())).unwrap();
         file.size = 0; // for test
+        file.files_count = 0;
         assert_eq!(
             file,
             Diskust {
@@ -97,7 +108,8 @@ mod tests {
                 is_file: true,
                 nodes: Box::new(None),
                 size: 0,
-                path_str: "./../Cargo.toml".to_string()
+                files_count: 0,
+                whole_path_str: "./../Cargo.toml".to_string()
             }
         );
     }

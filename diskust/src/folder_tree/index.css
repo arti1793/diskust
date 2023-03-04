@@ -3,3 +3,7 @@
   text-align: right;
   white-space: nowrap;
 }
+
+.label {
+  padding-left: 8px;
+}
