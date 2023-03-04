@@ -94,7 +94,7 @@ const Node: React.FC<{
     ))}
   </TreeNode>
 );
-let FREE_SPACE = 1.4 * 1024 * 1024 * 1024; // TODO!
+let FREE_SPACE = 250 * 1024 * 1024 * 1024; // TODO!
 export const FolderTree: React.FC<{}> = () => {
   const [{ root }, dispatch] = useStore();
 
