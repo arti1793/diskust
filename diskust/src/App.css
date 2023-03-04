@@ -1,15 +1,21 @@
 .tree {
   padding: 6px;
-  flex-basis: 35%;
+  flex-basis: 60%;
   border-right: 2px solid #0f0f0f;
+  overflow-y: scroll;
 }
 .graph {
   padding: 6px;
 
-  flex-basis: 65%;
+  flex-basis: 40%;
 }
 .container {
   display: flex;
   flex-direction: row;
   height: 100vh;
+}
+.spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
 }

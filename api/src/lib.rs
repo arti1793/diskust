@@ -1,4 +1,5 @@
 use rayon::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::{
     fs::read_dir,
     io::{self, Result},
@@ -7,16 +8,17 @@ use std::{
 
 pub struct Node {}
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Diskust {
     is_file: bool,
     is_dir: bool,
     size: u64,
+    path_str: String,
     nodes: Box<Option<Vec<Diskust>>>,
 }
 
 impl Diskust {
-    fn new(path: &Path) -> Result<Diskust> {
+    pub fn new(path: &Path) -> Result<Diskust> {
         let meta = path.metadata();
         if let Result::Ok(meta) = meta {
             if path.is_symlink() {
@@ -28,6 +30,7 @@ impl Diskust {
                     is_file: path.is_file(),
                     nodes: Box::new(None),
                     size: meta.len(),
+                    path_str: path.display().to_string(),
                 });
             }
             if path.is_dir() {
@@ -54,6 +57,7 @@ impl Diskust {
                     is_file: path.is_file(),
                     nodes: Box::new(Some(nodes)),
                     size,
+                    path_str: path.display().to_string(),
                 });
 
                 return dir_node;
@@ -92,7 +96,8 @@ mod tests {
                 is_dir: false,
                 is_file: true,
                 nodes: Box::new(None),
-                size: 0
+                size: 0,
+                path_str: "./../Cargo.toml".to_string()
             }
         );
     }

@@ -43,6 +43,7 @@ name = "api"
 version = "0.1.0"
 dependencies = [
  "rayon",
+ "serde",
 ]
 
 [[package]]
@@ -528,6 +529,7 @@ dependencies = [
 name = "diskust"
 version = "0.0.0"
 dependencies = [
+ "api",
  "serde",
  "serde_json",
  "tauri",
