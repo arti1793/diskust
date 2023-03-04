@@ -1,0 +1,15 @@
+.tree {
+  padding: 6px;
+  flex-basis: 35%;
+  border-right: 2px solid #0f0f0f;
+}
+.graph {
+  padding: 6px;
+
+  flex-basis: 65%;
+}
+.container {
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+}
