@@ -109,7 +109,8 @@ mod tests {
                 nodes: Box::new(None),
                 size: 0,
                 files_count: 0,
-                whole_path_str: "./../Cargo.toml".to_string()
+                whole_path_str: "./../Cargo.toml".to_string(),
+                name: "Cargo.toml".to_string()
             }
         );
     }
