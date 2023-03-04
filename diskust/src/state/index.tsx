@@ -1,4 +1,5 @@
-import { cloneDeepWith } from "lodash";
+import { cloneDeepWith, omit } from "lodash";
+import { getNewStack } from "./api/utils";
 import {
   Reducer,
   useContext,
@@ -15,16 +16,19 @@ export type Diskust = {
   whole_path_str: string;
   nodes?: Diskust[];
   name: string;
+  files_count: number;
 
   is_open?: boolean;
-  is_selected?: boolean;
 };
 
-let STATE = {};
+let STATE: State = {
+  root: undefined,
+  stack: [],
+};
 
 export type State = {
   root?: Diskust;
-  selected_node?: Diskust;
+  stack: Omit<Diskust, "nodes">[];
 };
 export enum Action {
   ROOT_UPDATE,
@@ -32,68 +36,72 @@ export enum Action {
   NODE_CLOSE,
   NODE_SELECT,
   NODE_TOGGLE,
+  BREADCRUMB_SELECT,
 }
 type ActionRootUpdate = { payload: Diskust; type: Action.ROOT_UPDATE };
-type ActionNodeOpen = { payload: string; type: Action.NODE_OPEN };
-type ActionNodeClose = { payload: string; type: Action.NODE_CLOSE };
-type ActionNodeSelect = { payload: string; type: Action.NODE_SELECT };
-type ActionNodeToggle = { payload: string; type: Action.NODE_TOGGLE };
+type ActionNodeOpen = {
+  payload: { whole_path_str: string; depth: number };
+  type: Action.NODE_OPEN;
+};
+type ActionNodeClose = {
+  payload: { whole_path_str: string; depth: number };
+  type: Action.NODE_CLOSE;
+};
+type ActionNodeSelect = {
+  payload: { whole_path_str: string; depth: number };
+  type: Action.NODE_SELECT;
+};
+type ActionNodeBreadcrumbSelect = {
+  payload: string;
+  type: Action.BREADCRUMB_SELECT;
+};
 
-type ActionType =
+export type ActionType =
   | ActionRootUpdate
   | ActionNodeOpen
   | ActionNodeClose
   | ActionNodeSelect
-  | ActionNodeToggle;
+  | ActionNodeBreadcrumbSelect;
 
 export const reducer: Reducer<State, ActionType> = (state, action) => {
-  console.log(action.type);
   if (action.type === Action.ROOT_UPDATE) {
     state.root = action.payload;
     return state;
   }
   if (action.type === Action.NODE_OPEN) {
+    let foundNode: Diskust | null = null;
     let root: Diskust = cloneDeepWith(state.root, (node: Diskust) => {
-      if (node?.whole_path_str === action.payload) {
-        return { ...node, is_open: true };
+      if (node?.whole_path_str === action.payload.whole_path_str) {
+        foundNode = { ...node, is_open: true };
+        return foundNode;
       }
     });
-    return { ...state, root };
+    return {
+      ...state,
+      root,
+      stack: getNewStack(
+        state.stack,
+        action.payload.depth,
+        omit(foundNode, "nodes") as State["stack"][number]
+      ),
+    };
   }
   if (action.type === Action.NODE_CLOSE) {
+    let foundNode: Diskust | null = null;
     let root: Diskust = cloneDeepWith(state.root, (node: Diskust) => {
-      if (node?.whole_path_str === action.payload) {
-        return { ...node, is_open: false };
-      }
-    });
-    return { ...state, root };
-  }
-  if (action.type === Action.NODE_SELECT) {
-    let foundNode;
-    let root: Diskust = cloneDeepWith(state.root, (node: Diskust) => {
-      if (node?.is_selected) {
-        return { ...node, is_selected: !node.is_selected };
-      }
-      if (node?.whole_path_str === action.payload) {
-        foundNode = { ...node, is_selected: true };
+      if (node?.whole_path_str === action.payload.whole_path_str) {
+        foundNode = { ...node, is_open: false };
         return foundNode;
       }
     });
-    return { ...state, root, selected_node: foundNode };
+
+    return {
+      ...state,
+      root,
+      stack: getNewStack(state.stack, action.payload.depth),
+    };
   }
-  if (action.type === Action.NODE_TOGGLE) {
-    let foundNode;
-    let root: Diskust = cloneDeepWith(state.root, (node: Diskust) => {
-      if (node?.is_selected) {
-        return { ...node, is_selected: false };
-      }
-      if (node?.whole_path_str === action.payload) {
-        foundNode = { ...node, is_selected: true, is_open: !node.is_open };
-        return foundNode;
-      }
-    });
-    return { ...state, root, selected_node: foundNode };
-  }
+
   return state;
 };
 

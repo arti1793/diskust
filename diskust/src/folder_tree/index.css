@@ -1,9 +1,24 @@
 .size {
-  display: inline-block;
+  display: inline-flex;
   text-align: right;
   white-space: nowrap;
 }
 
 .label {
   padding-left: 8px;
+}
+.icon {
+  padding-left: 8px;
+  color: #c5cbd3;
+}
+
+.progress {
+  width: 40px;
+  position: relative;
+}
+.progress-percent {
+  position: absolute;
+  left: 10px;
+  bottom: -3px;
+  text-shadow: 2px 1px 1px #000;
 }

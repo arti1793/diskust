@@ -1,13 +1,17 @@
 import { Breadcrumb, BreadcrumbProps } from "@blueprintjs/core";
 import { Breadcrumbs2 } from "@blueprintjs/popover2";
-import { useStore } from "../state";
+import { useStore, Action } from "../state";
 
 export const Breadcrumbs: React.FC = () => {
-  const [{ selected_node }] = useStore();
+  const [{ stack }, dispatch] = useStore();
   const items: BreadcrumbProps[] =
-    selected_node?.whole_path_str?.split("/").map((part) => ({
-      text: part,
-      onClick: () => {},
+    stack?.map(({ name, whole_path_str }, depth) => ({
+      text: name,
+      onClick: () =>
+        dispatch({
+          type: Action.NODE_OPEN,
+          payload: { whole_path_str, depth },
+        }),
     })) ?? [];
   return (
     <Breadcrumbs2
