@@ -1,0 +1,37 @@
+.disk-list-panel {
+  display: flex;
+  flex-direction: column;
+}
+.disk {
+  margin: 20px 20px 0 20px;
+}
+.disk:last-child {
+  margin-bottom: 20px;
+}
+
+.card-title {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+.title-link {
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+}
+.type-tag {
+  margin-left: 10px;
+}
+.mount {
+  display: inline-flex;
+  align-items: center;
+  font-size: small;
+}
+.mount pre {
+  margin: 0;
+}
+.usage {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+}

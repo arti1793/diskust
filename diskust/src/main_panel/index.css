@@ -1,0 +1,5 @@
+.main-panel {
+  display: flex;
+  flex-basis: 100vw;
+  height: 100vh;
+}

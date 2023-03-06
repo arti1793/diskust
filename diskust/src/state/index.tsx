@@ -9,27 +9,41 @@ import {
   ReactNode,
 } from "react";
 
-export type Diskust = {
+export type Node = {
   is_file: boolean;
   is_dir: boolean;
   size: number;
   whole_path_str: string;
-  nodes?: Diskust[];
+  nodes?: Node[];
   name: string;
   files_count: number;
 
   is_open?: boolean;
 };
 
+export type DiskInfo = {
+  name: string;
+  path: string;
+  total: number;
+  free_space: number;
+  filled: number;
+  is_removable: boolean;
+  file_system: string;
+  type_: string;
+};
+
 let STATE: State = {
-  root: undefined,
+  selected_disk_nodes: undefined,
   stack: [],
+  disks: [],
 };
 
 export type State = {
-  root?: Diskust;
-  stack: Omit<Diskust, "nodes">[];
+  selected_disk_nodes?: Node;
+  stack: Omit<Node, "nodes">[];
+  disks: DiskInfo[];
 };
+
 export enum Action {
   ROOT_UPDATE,
   NODE_OPEN,
@@ -37,23 +51,34 @@ export enum Action {
   NODE_SELECT,
   NODE_TOGGLE,
   BREADCRUMB_SELECT,
+  DISK_LIST_INFO_UPDATE,
 }
-type ActionRootUpdate = { payload: Diskust; type: Action.ROOT_UPDATE };
+
+type ActionRootUpdate = { payload: Node; type: Action.ROOT_UPDATE };
+
 type ActionNodeOpen = {
   payload: { whole_path_str: string; depth: number };
   type: Action.NODE_OPEN;
 };
+
 type ActionNodeClose = {
   payload: { whole_path_str: string; depth: number };
   type: Action.NODE_CLOSE;
 };
+
 type ActionNodeSelect = {
   payload: { whole_path_str: string; depth: number };
   type: Action.NODE_SELECT;
 };
+
 type ActionNodeBreadcrumbSelect = {
   payload: string;
   type: Action.BREADCRUMB_SELECT;
+};
+
+type ActionDiskListInfoUpdate = {
+  payload: DiskInfo[];
+  type: Action.DISK_LIST_INFO_UPDATE;
 };
 
 export type ActionType =
@@ -61,24 +86,28 @@ export type ActionType =
   | ActionNodeOpen
   | ActionNodeClose
   | ActionNodeSelect
-  | ActionNodeBreadcrumbSelect;
+  | ActionNodeBreadcrumbSelect
+  | ActionDiskListInfoUpdate;
 
 export const reducer: Reducer<State, ActionType> = (state, action) => {
   if (action.type === Action.ROOT_UPDATE) {
-    state.root = action.payload;
+    state.selected_disk_nodes = action.payload;
     return state;
   }
   if (action.type === Action.NODE_OPEN) {
-    let foundNode: Diskust | null = null;
-    let root: Diskust = cloneDeepWith(state.root, (node: Diskust) => {
-      if (node?.whole_path_str === action.payload.whole_path_str) {
-        foundNode = { ...node, is_open: true };
-        return foundNode;
+    let foundNode: Node | null = null;
+    let selected_disk_nodes: Node = cloneDeepWith(
+      state.selected_disk_nodes,
+      (node: Node) => {
+        if (node?.whole_path_str === action.payload.whole_path_str) {
+          foundNode = { ...node, is_open: true };
+          return foundNode;
+        }
       }
-    });
+    );
     return {
       ...state,
-      root,
+      selected_disk_nodes,
       stack: getNewStack(
         state.stack,
         action.payload.depth,
@@ -87,18 +116,29 @@ export const reducer: Reducer<State, ActionType> = (state, action) => {
     };
   }
   if (action.type === Action.NODE_CLOSE) {
-    let foundNode: Diskust | null = null;
-    let root: Diskust = cloneDeepWith(state.root, (node: Diskust) => {
-      if (node?.whole_path_str === action.payload.whole_path_str) {
-        foundNode = { ...node, is_open: false };
-        return foundNode;
+    let foundNode: Node | null = null;
+    let selected_disk_nodes: Node = cloneDeepWith(
+      state.selected_disk_nodes,
+      (node: Node) => {
+        if (node?.whole_path_str === action.payload.whole_path_str) {
+          foundNode = { ...node, is_open: false };
+          return foundNode;
+        } else {
+        }
       }
-    });
+    );
 
     return {
       ...state,
-      root,
+      selected_disk_nodes,
       stack: getNewStack(state.stack, action.payload.depth),
+    };
+  }
+
+  if (action.type === Action.DISK_LIST_INFO_UPDATE) {
+    return {
+      ...state,
+      disks: action.payload,
     };
   }
 

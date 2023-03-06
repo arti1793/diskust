@@ -2,32 +2,31 @@ use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
     fs::read_dir,
-    io::{self, Result},
+    io::{self, Read, Result},
     path::Path,
 };
+use sysinfo::{DiskExt, DiskType, System, SystemExt};
 
-pub struct Node {}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Diskust {
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Node {
     is_file: bool,
     is_dir: bool,
     size: u64,
     files_count: u64,
     whole_path_str: String,
     name: String,
-    nodes: Box<Option<Vec<Diskust>>>,
+    nodes: Box<Option<Vec<Node>>>,
 }
 
-impl Diskust {
-    pub fn new(path: &Path) -> Result<Diskust> {
+impl Node {
+    pub fn new(path: &Path) -> Result<Node> {
         let meta = path.metadata();
         if let Result::Ok(meta) = meta {
             if path.is_symlink() {
                 return Result::Err(io::Error::new(io::ErrorKind::NotFound, "skip symlink"));
             }
             if path.is_file() {
-                return Ok(Diskust {
+                return Ok(Node {
                     is_dir: path.is_dir(),
                     is_file: path.is_file(),
                     nodes: Box::new(None),
@@ -38,7 +37,7 @@ impl Diskust {
                 });
             }
             if path.is_dir() {
-                let mut nodes: Vec<Diskust> = read_dir(path)?
+                let mut nodes: Vec<Node> = read_dir(path)?
                     .par_bridge()
                     .into_par_iter()
                     .flat_map(|entry| {
@@ -55,12 +54,12 @@ impl Diskust {
                     })
                     .collect();
                 nodes.par_sort_by(|one, two| two.size.cmp(&one.size));
-                let size = nodes.iter().map(|Diskust { size, .. }| size).sum();
+                let size = nodes.iter().map(|Node { size, .. }| size).sum();
                 let files_count = nodes
                     .iter()
-                    .map(|Diskust { files_count, .. }| files_count)
+                    .map(|Node { files_count, .. }| files_count)
                     .sum();
-                let dir_node = Ok(Diskust {
+                let dir_node = Ok(Node {
                     is_dir: path.is_dir(),
                     is_file: path.is_file(),
                     nodes: Box::new(Some(nodes)),
@@ -80,6 +79,72 @@ impl Diskust {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DiskInfo {
+    name: String,
+    path: String,
+    total: u64,
+    free_space: u64,
+    filled: u64,
+    is_removable: bool,
+    file_system: String,
+    type_: String,
+    // root: Option<Node>,
+}
+pub struct Diskust {
+    system: System,
+    pub disks: Vec<DiskInfo>,
+}
+
+impl<'a> Diskust {
+    pub fn new() -> Self {
+        let mut system = System::new_all();
+
+        // First we update all information of our `System` struct.
+        system.refresh_all();
+
+        // We display all disks' information:
+        // let mut disks: HashMap<DiskInfo, Option<Node>> = HashMap::new();
+        let mut disks = Vec::new();
+        for disk in system.disks() {
+            let mut fs = String::new();
+            disk.file_system().read_to_string(&mut fs).unwrap();
+            disks.push(DiskInfo {
+                file_system: fs,
+                type_: match disk.type_() {
+                    DiskType::HDD => String::from("HDD"),
+                    DiskType::SSD => String::from("SSD"),
+                    DiskType::Unknown(e) => format!("unknown"),
+                },
+                is_removable: disk.is_removable(),
+                free_space: disk.available_space(),
+                name: disk.name().to_string_lossy().to_string(),
+                path: disk.mount_point().display().to_string(),
+                total: disk.total_space(),
+                filled: disk.total_space() - disk.available_space(), // root: None,
+            });
+        }
+        Diskust { system, disks }
+    }
+
+    // fn load_disk(mut self, name: &str) -> Result<Self> {
+    //     // let path = disk.path.clone();
+    //     let disk = self
+    //         .disks
+    //         .iter_mut()
+    //         .find(|disk_info| disk_info.name == name);
+    //     if let Some(disk) = disk {
+    //         disk.root = Some(Node::new(Path::new(&disk.path))?);
+    //         return Result::Ok(self);
+    //     } else {
+    //         return Result::Err(io::Error::new(
+    //             io::ErrorKind::NotFound,
+    //             "not found disk with name",
+    //         ));
+    //     }
+    // }
+}
+
 #[cfg(test)]
 mod tests {
     use std::io::ErrorKind;
@@ -89,7 +154,7 @@ mod tests {
     #[test]
     fn empty() {
         assert_eq!(
-            Diskust::new(Path::new(&"./no_such_directory".to_string()))
+            Node::new(Path::new(&"./no_such_directory".to_string()))
                 .err()
                 .unwrap()
                 .kind(),
@@ -98,12 +163,12 @@ mod tests {
     }
     #[test]
     fn file() {
-        let mut file = Diskust::new(Path::new(&"./../Cargo.toml".to_string())).unwrap();
+        let mut file = Node::new(Path::new(&"./../Cargo.toml".to_string())).unwrap();
         file.size = 0; // for test
         file.files_count = 0;
         assert_eq!(
             file,
-            Diskust {
+            Node {
                 is_dir: false,
                 is_file: true,
                 nodes: Box::new(None),
@@ -114,4 +179,13 @@ mod tests {
             }
         );
     }
+    #[test]
+    fn disks() {
+        // Diskust::new();
+        assert_eq!(Diskust::new().disks.len() == 0, false)
+    }
+    // #[test]
+    // fn load_disk_error() {
+    //     assert_eq!(Diskust::new().load_disk("errorishname").is_err(), true)
+    // }
 }

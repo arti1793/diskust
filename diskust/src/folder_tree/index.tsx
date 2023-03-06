@@ -9,11 +9,12 @@ import {
   ProgressBar,
   TreeNode,
 } from "@blueprintjs/core";
-import { Action, Diskust, useStore } from "../state";
+import { Action, Node, useStore } from "../state";
 import { isEmpty, map } from "lodash";
+import { DiskInfo } from "../state";
 import "./index.css";
 
-const mapNode = (node: Diskust): Omit<ITreeNodeProps, "depth" | "path"> => ({
+const mapNode = (node: Node): Omit<ITreeNodeProps, "depth" | "path"> => ({
   id: node?.whole_path_str,
   label: <span className="label"> {node?.name}</span>,
   hasCaret: node?.is_dir && !isEmpty(node.nodes),
@@ -36,9 +37,10 @@ const ProgressIcon: React.FC<{
   percent: number;
   is_file: boolean;
   is_open: boolean;
-}> = ({ percent, is_file, is_open }) => (
+  id: string;
+}> = ({ percent, is_file, is_open, id }) => (
   <>
-    <div className="progress">
+    <div className="progress" id={id}>
       <ProgressBar
         intent={
           percent > 80
@@ -61,42 +63,43 @@ const ProgressIcon: React.FC<{
     )}
   </>
 );
-const Node: React.FC<{
-  parent: Diskust;
+
+const NodeComponent: React.FC<{
+  parent: Node;
   depth: number;
   path: number[];
-  free_space: number;
+  disk: DiskInfo;
   actions: Pick<ITreeNodeProps, "onClick" | "onCollapse" | "onExpand">;
-}> = ({ actions, depth, parent, path, free_space }) => (
+}> = ({ actions, depth, parent, path, disk }) => (
   <TreeNode
     key={parent.whole_path_str}
     depth={depth}
     path={path}
     icon={
       <ProgressIcon
+        id={parent?.whole_path_str}
         is_file={parent.is_file}
         is_open={!!parent.is_open}
-        percent={parseInt(((parent.size / free_space) * 100).toFixed(0))}
+        percent={parseInt(((parent.size / disk.total) * 100).toFixed(0))}
       />
     }
     {...mapNode(parent)}
     {...actions}
   >
     {map(parent.nodes, (node, i) => (
-      <Node
+      <NodeComponent
         key={node.whole_path_str}
         depth={depth + 1}
         path={[i, ...path]}
         actions={actions}
         parent={node}
-        free_space={free_space}
+        disk={disk}
       />
     ))}
   </TreeNode>
 );
-let FREE_SPACE = 250 * 1024 * 1024 * 1024; // TODO!
-export const FolderTree: React.FC<{}> = () => {
-  const [{ root }, dispatch] = useStore();
+export const FolderTree: React.FC<{ disk: DiskInfo }> = ({ disk }) => {
+  const [{ selected_disk_nodes }, dispatch] = useStore();
 
   const actions: Pick<ITreeNodeProps, "onClick" | "onCollapse" | "onExpand"> = {
     onExpand: ({ props: { id, depth } }: TreeNode) => {
@@ -125,14 +128,14 @@ export const FolderTree: React.FC<{}> = () => {
       });
     },
   };
-  if (!root) return null;
+  if (!selected_disk_nodes) return null;
   return (
-    <Node
-      parent={root}
+    <NodeComponent
+      parent={selected_disk_nodes}
       actions={actions}
       depth={0}
       path={[0]}
-      free_space={FREE_SPACE}
+      disk={disk}
     />
   );
 };
