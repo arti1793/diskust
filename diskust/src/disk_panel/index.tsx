@@ -28,17 +28,21 @@ export const DisksPanel: React.FC<PanelProps<DiskPanelProps>> = ({ disk }) => {
   return (
     <div className="container bp4-dark">
       {!loaded && <Spinner className="spinner" intent={Intent.PRIMARY} />}
-      <header className="header">
-        <Breadcrumbs />
-      </header>
-      <div className="content">
-        <aside className="tree">
-          <FolderTree disk={disk} />
-        </aside>
-        <aside className="graph">
-          <Graph />
-        </aside>
-      </div>
+      {loaded && (
+        <>
+          <header className="header">
+            <Breadcrumbs />
+          </header>
+          <div className="content">
+            <aside className="tree">
+              <FolderTree disk={disk} />
+            </aside>
+            <aside className="graph">
+              <Graph />
+            </aside>
+          </div>
+        </>
+      )}
     </div>
   );
 };

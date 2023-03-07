@@ -1,7 +1,8 @@
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::read_dir,
+    ffi::OsStr,
+    fs::{metadata, read_dir},
     io::{self, Read, Result},
     path::Path,
 };
@@ -20,10 +21,48 @@ pub struct Node {
 
 impl Node {
     pub fn new(path: &Path) -> Result<Node> {
-        let meta = path.metadata();
+        let meta = metadata(path);
         if let Result::Ok(meta) = meta {
             if path.is_symlink() {
-                return Result::Err(io::Error::new(io::ErrorKind::NotFound, "skip symlink"));
+                return Result::Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!(
+                        "skip symlink {}",
+                        path.file_name()
+                            .unwrap_or(OsStr::new(""))
+                            .to_str()
+                            .unwrap_or("")
+                            .to_string()
+                    ),
+                ));
+            }
+            if path
+                .file_name()
+                .unwrap_or(OsStr::new("/"))
+                .to_str()
+                // .into_string()
+                .unwrap_or(" ")
+                .starts_with(".")
+                || path
+                    .file_name()
+                    .unwrap_or(OsStr::new("/"))
+                    .to_str()
+                    // .into_string()
+                    .unwrap_or(" ")
+                    == "proc"
+            // ???????????????????????????????
+            {
+                return Result::Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    format!(
+                        "skip hidden {}",
+                        path.file_name()
+                            .unwrap_or(OsStr::new(""))
+                            .to_str()
+                            .unwrap_or("")
+                            .to_string()
+                    ),
+                ));
             }
             if path.is_file() {
                 return Ok(Node {
@@ -33,38 +72,54 @@ impl Node {
                     size: meta.len(),
                     files_count: 1,
                     whole_path_str: path.display().to_string(),
-                    name: path.file_name().unwrap().to_owned().into_string().unwrap(),
+                    name: path
+                        .file_name()
+                        .unwrap_or(OsStr::new(""))
+                        .to_str()
+                        .unwrap_or("")
+                        .to_string(),
                 });
             }
             if path.is_dir() {
                 let mut nodes: Vec<Node> = read_dir(path)?
                     .par_bridge()
                     .into_par_iter()
-                    .flat_map(|entry| {
-                        if let Result::Ok(entry) = entry {
-                            let node = Self::new(&entry.path());
-                            if let Result::Ok(node) = node {
-                                Some(node)
-                            } else {
-                                None
+                    .flat_map(|entry| -> Option<Node> {
+                        match entry {
+                            Result::Ok(entry) => {
+                                let node = Self::new(&entry.path());
+                                return match node {
+                                    Result::Ok(node) => Some(node),
+                                    Result::Err(err) => {
+                                        println!("{}", err.to_string());
+                                        return None;
+                                    }
+                                };
                             }
-                        } else {
-                            None
+                            Result::Err(err) => {
+                                println!("{}", err.to_string());
+                                return None;
+                            }
                         }
                     })
                     .collect();
-                nodes.par_sort_by(|one, two| two.size.cmp(&one.size));
+                nodes.sort_by(|one, two| two.size.cmp(&one.size));
                 let size = nodes.iter().map(|Node { size, .. }| size).sum();
                 let files_count = nodes
                     .iter()
                     .map(|Node { files_count, .. }| files_count)
                     .sum();
-                let dir_node = Ok(Node {
+                let dir_node = Ok(Self {
                     is_dir: path.is_dir(),
                     is_file: path.is_file(),
                     nodes: Box::new(Some(nodes)),
                     size,
-                    name: path.file_name().unwrap().to_owned().into_string().unwrap(),
+                    name: path
+                        .file_name()
+                        .unwrap_or(OsStr::new(""))
+                        .to_str()
+                        .unwrap_or("")
+                        .to_string(),
                     files_count,
                     whole_path_str: path.display().to_string(),
                 });
@@ -72,7 +127,10 @@ impl Node {
                 return dir_node;
             }
 
-            return Result::Err(io::Error::new(io::ErrorKind::NotFound, "no way"));
+            return Result::Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                "not a dir, not a file , not a symlink",
+            ));
         } else {
             return Result::Err(meta.err().unwrap());
         }
@@ -92,7 +150,7 @@ pub struct DiskInfo {
     // root: Option<Node>,
 }
 pub struct Diskust {
-    system: System,
+    pub system: System,
     pub disks: Vec<DiskInfo>,
 }
 
@@ -114,7 +172,7 @@ impl<'a> Diskust {
                 type_: match disk.type_() {
                     DiskType::HDD => String::from("HDD"),
                     DiskType::SSD => String::from("SSD"),
-                    DiskType::Unknown(e) => format!("unknown"),
+                    DiskType::Unknown(_) => format!("unknown"),
                 },
                 is_removable: disk.is_removable(),
                 free_space: disk.available_space(),
