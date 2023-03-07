@@ -8,7 +8,7 @@ import "./App.css";
 
 function App() {
   return (
-    <div className="container bp4-dark">
+    <div className="bp4-dark">
       <MainPanel />
     </div>
   );

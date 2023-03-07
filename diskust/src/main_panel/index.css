@@ -3,3 +3,9 @@
   flex-basis: 100vw;
   height: 100vh;
 }
+.container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  height: 100vh;
+}

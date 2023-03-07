@@ -50,7 +50,7 @@ impl Node {
                     // .into_string()
                     .unwrap_or(" ")
                     == "proc"
-            // ???????????????????????????????
+            // linux pseudo folder for kernel interconnections. we probably don't want to go there
             {
                 return Result::Err(io::Error::new(
                     io::ErrorKind::NotFound,

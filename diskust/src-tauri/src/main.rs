@@ -8,7 +8,7 @@ use serde_json::json;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command(async)]
 fn get_nodes(pathstr: &str) -> String {
-    let root = Node::new(Path::new(pathstr)).unwrap();
+    let root = Node::new(Path::new(pathstr)).unwrap(); // TODO;
     json!(root).to_string()
 }
 #[tauri::command(async)]

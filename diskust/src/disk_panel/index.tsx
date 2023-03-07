@@ -26,7 +26,7 @@ export const DisksPanel: React.FC<PanelProps<DiskPanelProps>> = ({ disk }) => {
   }, []);
 
   return (
-    <div className="container bp4-dark">
+    <div className="">
       {!loaded && <Spinner className="spinner" intent={Intent.PRIMARY} />}
       {loaded && (
         <>

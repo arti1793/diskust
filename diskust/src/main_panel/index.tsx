@@ -11,7 +11,7 @@ const disk_list_panel = {
 export const MainPanel: React.FC<{}> = (props) => {
   return (
     <PanelStack2
-      className="main-panel"
+      className="main-panel container"
       initialPanel={disk_list_panel}
       showPanelHeader
     />
