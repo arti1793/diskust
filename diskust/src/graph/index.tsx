@@ -71,7 +71,10 @@ const mapper = (
     fill: "red",
   }));
 };
-const findNodeList = (toFind: Omit<Node, "nodes">, node: Node): Node[] => {
+const findNodeList = (
+  toFind: Omit<Node, "nodes">,
+  node: Node
+): { name: string; uv: number; pv: number; fill: string }[] => {
   let stack = [node];
   let found: Node | null = null;
   while (stack.length > 0) {
@@ -92,7 +95,7 @@ const findNodeList = (toFind: Omit<Node, "nodes">, node: Node): Node[] => {
 export const Graph: React.FC = () => {
   const [{ stack, selected_disk_nodes }] = useStore();
   const top = stack[stack.length - 1];
-  if (!selected_disk_nodes) return null;
+  if (!selected_disk_nodes || !top) return null;
   const data = findNodeList(top, selected_disk_nodes);
 
   return (

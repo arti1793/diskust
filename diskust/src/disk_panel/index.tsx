@@ -5,7 +5,7 @@ import { FolderTree } from "../folder_tree";
 import { Breadcrumbs } from "../breadcrumbs";
 import { Action, State, useStore } from "../state/index";
 import { loadNodes } from "../state/api/load_nodes";
-import Graph from "../graph";
+import { Graph } from "../graph";
 import { DiskInfo } from "../state";
 
 import "./index.css";
