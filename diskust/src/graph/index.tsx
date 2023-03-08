@@ -1,10 +1,13 @@
-import React, { PureComponent } from "react";
+import React from "react";
 import {
   RadialBarChart,
   RadialBar,
   Legend,
   ResponsiveContainer,
 } from "recharts";
+
+import { useStore, Node } from "./../state";
+import { map } from "lodash";
 
 const data = [
   {
@@ -58,32 +61,61 @@ const style = {
   lineHeight: "24px",
 };
 
-export default class Graph extends PureComponent {
-  static demoUrl = "https://codesandbox.io/s/simple-radial-bar-chart-qf8fz";
+const mapper = (
+  nodes: Node[]
+): { name: string; uv: number; pv: number; fill: string }[] => {
+  return map(nodes, ({ name }) => ({
+    name,
+    pv: 0,
+    uv: 0,
+    fill: "red",
+  }));
+};
+const findNodeList = (toFind: Omit<Node, "nodes">, node: Node): Node[] => {
+  let stack = [node];
+  let found: Node | null = null;
+  while (stack.length > 0) {
+    let curr = stack.pop();
 
-  render() {
-    return (
-      <ResponsiveContainer width="100%" height="100%">
-        <RadialBarChart
-          cx="50%"
-          cy="50%"
-          innerRadius="10%"
-          outerRadius="70%"
-          barSize={40}
-          data={data}
-        >
-          <RadialBar
-            label={{ position: "insideStart", fill: "#000" }}
-            dataKey="uv"
-          />
-          <Legend
-            iconSize={10}
-            layout="vertical"
-            verticalAlign="middle"
-            wrapperStyle={style}
-          />
-        </RadialBarChart>
-      </ResponsiveContainer>
-    );
+    if (curr?.whole_path_str === toFind.whole_path_str) {
+      found = curr;
+      break;
+    }
+
+    if (curr?.nodes?.length) {
+      stack.push(...curr.nodes);
+    }
   }
-}
+
+  return mapper(found?.nodes ?? []);
+};
+export const Graph: React.FC = () => {
+  const [{ stack, selected_disk_nodes }] = useStore();
+  const top = stack[stack.length - 1];
+  if (!selected_disk_nodes) return null;
+  const data = findNodeList(top, selected_disk_nodes);
+
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <RadialBarChart
+        cx="50%"
+        cy="50%"
+        innerRadius="10%"
+        outerRadius="70%"
+        barSize={40}
+        data={data}
+      >
+        <RadialBar
+          label={{ position: "insideStart", fill: "#000" }}
+          dataKey="uv"
+        />
+        <Legend
+          iconSize={10}
+          layout="vertical"
+          verticalAlign="middle"
+          wrapperStyle={style}
+        />
+      </RadialBarChart>
+    </ResponsiveContainer>
+  );
+};
