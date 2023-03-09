@@ -50,16 +50,7 @@ export const DisksListPanel: React.FC<PanelProps<DiskListPanelProps>> = ({
       {!loaded && <Spinner className="spinner" intent={Intent.PRIMARY} />}
       {loaded &&
         map(disks, (disk, i) => {
-          const {
-            filled,
-            name,
-            path,
-            total,
-            free_space,
-            file_system,
-            is_removable,
-            type_,
-          } = disk;
+          const { filled, name, path, total, free_space, type_ } = disk;
           const percentFilled = parseInt(((filled / total) * 100).toFixed(2));
           const intent =
             percentFilled > 85

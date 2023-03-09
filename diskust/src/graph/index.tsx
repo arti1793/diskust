@@ -1,80 +1,47 @@
 import React from "react";
-import {
-  RadialBarChart,
-  RadialBar,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
+import { ResponsiveContainer, PieChart, Pie } from "recharts";
+import Gradient from "javascript-color-gradient";
+import { Colors } from "@blueprintjs/core";
 
 import { useStore, Node } from "./../state";
-import { map } from "lodash";
-
-const data = [
-  {
-    name: "18-24",
-    uv: 31.47,
-    pv: 2400,
-    fill: "#8884d8",
-  },
-  {
-    name: "25-29",
-    uv: 26.69,
-    pv: 4567,
-    fill: "#83a6ed",
-  },
-  {
-    name: "30-34",
-    uv: 15.69,
-    pv: 1398,
-    fill: "#8dd1e1",
-  },
-  {
-    name: "35-39",
-    uv: 8.22,
-    pv: 9800,
-    fill: "#82ca9d",
-  },
-  {
-    name: "40-49",
-    uv: 8.63,
-    pv: 3908,
-    fill: "#a4de6c",
-  },
-  {
-    name: "50+",
-    uv: 2.63,
-    pv: 4800,
-    fill: "#d0ed57",
-  },
-  {
-    name: "unknow",
-    uv: 6.67,
-    pv: 4800,
-    fill: "#ffc658",
-  },
-];
-
-const style = {
-  top: "50%",
-  right: 0,
-  transform: "translate(0, -50%)",
-  lineHeight: "24px",
-};
+import { map, sortBy } from "lodash";
+import { filesize } from "filesize";
 
 const mapper = (
-  nodes: Node[]
-): { name: string; uv: number; pv: number; fill: string }[] => {
-  return map(nodes, ({ name }) => ({
-    name,
-    pv: 0,
-    uv: 0,
-    fill: "red",
-  }));
+  parent: Node
+): {
+  name: string;
+  size: number;
+  pv: number;
+  fill: string;
+  size_string: string;
+  percent: number;
+}[] => {
+  const total = parent.size;
+  let sorted = sortBy(parent.nodes ?? [], "size");
+
+  const gradient = new Gradient();
+  gradient.setColorGradient(Colors.GREEN3, Colors.RED3).setMidpoint(101);
+  const colors = gradient.getColors();
+  console.log(colors);
+
+  return map(sorted, ({ name, size }) => {
+    const percent = parseInt(((size / total) * 100).toFixed(0));
+    console.log(percent, colors[percent]);
+    return {
+      name,
+      pv: 1000,
+      size,
+      size_string: `${name} (${filesize(size).toString()})`,
+      fill: colors[percent],
+      percent,
+    };
+  });
 };
 const findNodeList = (
   toFind: Omit<Node, "nodes">,
   node: Node
-): { name: string; uv: number; pv: number; fill: string }[] => {
+): { name: string; size: number; size_string: string; fill: string }[] => {
   let stack = [node];
   let found: Node | null = null;
   while (stack.length > 0) {
@@ -90,7 +57,8 @@ const findNodeList = (
     }
   }
 
-  return mapper(found?.nodes ?? []);
+  if (!found) return [];
+  return mapper(found);
 };
 export const Graph: React.FC = () => {
   const [{ stack, selected_disk_nodes }] = useStore();
@@ -100,25 +68,57 @@ export const Graph: React.FC = () => {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <RadialBarChart
-        cx="50%"
-        cy="50%"
-        innerRadius="10%"
-        outerRadius="70%"
-        barSize={40}
-        data={data}
-      >
-        <RadialBar
-          label={{ position: "insideStart", fill: "#000" }}
-          dataKey="uv"
+      <PieChart>
+        <Pie
+          dataKey="size"
+          startAngle={360}
+          endAngle={0}
+          data={data}
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
+          fill="#8884d8"
+          // label={({ payload: { size_string, percent } }) => {
+          //   if (percent < 2) return null;
+          //   return size_string;
+          // }}
+          label={({
+            cx,
+            cy,
+            midAngle,
+            innerRadius,
+            outerRadius,
+            value,
+            index,
+            fill,
+            size_string,
+            percent,
+          }) => {
+            console.log("handling label?");
+            const RADIAN = Math.PI / 180;
+            // eslint-disable-next-line
+            const radius = 25 + innerRadius + (outerRadius - innerRadius);
+            // eslint-disable-next-line
+            const x = cx + radius * Math.cos(-midAngle * RADIAN);
+            // eslint-disable-next-line
+            const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+            if (percent < 3) return null;
+            return (
+              <text
+                x={x}
+                y={y}
+                fill={fill}
+                textAnchor={x > cx ? "start" : "end"}
+                dominantBaseline="central"
+              >
+                {size_string}
+              </text>
+            );
+          }}
+          tooltipType="none"
         />
-        <Legend
-          iconSize={10}
-          layout="vertical"
-          verticalAlign="middle"
-          wrapperStyle={style}
-        />
-      </RadialBarChart>
+      </PieChart>
     </ResponsiveContainer>
   );
 };
