@@ -76,12 +76,8 @@ export const Graph: React.FC = () => {
           data={data}
           cx="50%"
           cy="50%"
-          outerRadius={80}
+          outerRadius="60%"
           fill="#8884d8"
-          // label={({ payload: { size_string, percent } }) => {
-          //   if (percent < 2) return null;
-          //   return size_string;
-          // }}
           label={({
             cx,
             cy,
