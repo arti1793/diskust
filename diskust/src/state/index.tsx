@@ -54,7 +54,10 @@ export enum Action {
   DISK_LIST_INFO_UPDATE,
 }
 
-type ActionRootUpdate = { payload: Node; type: Action.ROOT_UPDATE };
+type ActionRootUpdate = {
+  payload: { selected_disk_nodes: Node; disk_name: string };
+  type: Action.ROOT_UPDATE;
+};
 
 type ActionNodeOpen = {
   payload: { whole_path_str: string; depth: number };
@@ -91,7 +94,9 @@ export type ActionType =
 
 export const reducer: Reducer<State, ActionType> = (state, action) => {
   if (action.type === Action.ROOT_UPDATE) {
-    state.selected_disk_nodes = action.payload;
+    const { disk_name, selected_disk_nodes } = action.payload;
+    state.selected_disk_nodes = selected_disk_nodes;
+    state.selected_disk_nodes.name = disk_name;
     return state;
   }
   if (action.type === Action.NODE_OPEN) {

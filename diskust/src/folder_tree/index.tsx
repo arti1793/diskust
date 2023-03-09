@@ -42,6 +42,7 @@ const ProgressIcon: React.FC<{
   <>
     <div className="progress" id={id}>
       <ProgressBar
+        className="progress-bar"
         intent={
           percent > 80
             ? Intent.DANGER

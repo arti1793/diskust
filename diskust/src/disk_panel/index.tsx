@@ -18,7 +18,7 @@ export const DisksPanel: React.FC<PanelProps<DiskPanelProps>> = ({ disk }) => {
     loadNodes(disk.path)
       .then((root) => {
         dispatch({
-          payload: root,
+          payload: { selected_disk_nodes: root, disk_name: disk.name },
           type: Action.ROOT_UPDATE,
         });
       })

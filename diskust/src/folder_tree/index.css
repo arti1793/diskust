@@ -16,6 +16,9 @@
   width: 40px;
   position: relative;
 }
+.progress-bar {
+  width: 40px !important;
+}
 .progress-percent {
   position: absolute;
   left: 10px;
